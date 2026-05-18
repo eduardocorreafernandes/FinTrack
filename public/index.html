@@ -100,9 +100,76 @@
       color: white;
     }
 
-    .search-box:focus {
+    .search-box:focus,
+    .custom-input:focus {
       outline: none;
       border-color: var(--yellow);
+      box-shadow: none;
+    }
+
+    .custom-input {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-primary);
+      padding: 10px 14px;
+    }
+
+    .custom-input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .custom-select {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      color: var(--text-primary);
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .custom-select:focus {
+      outline: none;
+      border-color: var(--yellow);
+    }
+
+    .custom-select option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    .form-row {
+      gap: 16px;
+    }
+
+    .modal-category {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-category.active {
+      display: flex;
+    }
+
+    .modal-category-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 30px;
+      width: 90%;
+      max-width: 500px;
+    }
+
+    .modal-category-content h4 {
+      margin-bottom: 20px;
     }
 
     .profile-box {
@@ -342,9 +409,41 @@
           Nova Transação
         </button>
 
+        <button id="btn-new-category" class="action-btn btn-yellow">
+          <i class="bi bi-tag"></i>
+          Nova Categoria
+        </button>
+
         <div class="profile-avatar">
           EF
         </div>
+      </div>
+    </div>
+
+    <div class="card-custom mb-4">
+      <h4 class="section-title mb-3">Nova Transação</h4>
+      <div class="row g-3 form-row">
+        <div class="col-md-4">
+          <input id="input-descricao" class="custom-input w-100" type="text" placeholder="Descrição" />
+        </div>
+        <div class="col-md-4">
+          <input id="input-valor" class="custom-input w-100" type="text" placeholder="Valor (use - para despesas)" />
+        </div>
+        <div class="col-md-4">
+          <select id="input-categoria" class="custom-select w-100">
+            <option value="">Selecione uma categoria</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <input id="input-conta" class="custom-input w-100" type="text" placeholder="ID da conta" />
+        </div>
+        <div class="col-md-4">
+          <input id="input-usuario" class="custom-input w-100" type="text" placeholder="ID do usuário" />
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 mt-3">
+        <button id="btn-add-transaction" class="action-btn btn-yellow">Adicionar Transação</button>
+        <button id="btn-clear-transaction" class="action-btn btn-sm btn-yellow" type="button">Limpar Campos</button>
       </div>
     </div>
 
@@ -543,13 +642,110 @@
       </div>
     </div>
   </main>
+
+  <div class="modal-category" id="modal-category">
+    <div class="modal-category-content">
+      <h4 class="section-title mb-3">Registrar Categoria</h4>
+      <div class="mb-3">
+        <input id="input-categoria-nome" class="custom-input w-100" type="text" placeholder="Nome da categoria" />
+        <input id="input-categoria-tipo" class="custom-input w-100" type="text" placeholder="Tipo da categoria" />
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        <button id="btn-save-category" class="action-btn btn-yellow">Salvar Categoria</button>
+        <button id="btn-close-category" class="action-btn" style="background: #555; color: white;">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
 <script>
   const tbody = document.getElementById('transactions-tbody');
   const btnNew = document.getElementById('btn-new-transaction');
   const btnRefresh = document.getElementById('btn-refresh-transactions');
+  const btnAddTransaction = document.getElementById('btn-add-transaction');
+  const btnClearTransaction = document.getElementById('btn-clear-transaction');
+  const btnNewCategory = document.getElementById('btn-new-category');
+  const btnSaveCategory = document.getElementById('btn-save-category');
+  const btnCloseCategory = document.getElementById('btn-close-category');
+  const modalCategory = document.getElementById('modal-category');
+  const inputDescricao = document.getElementById('input-descricao');
+  const inputValor = document.getElementById('input-valor');
+  const inputCategoria = document.getElementById('input-categoria');
+  const inputConta = document.getElementById('input-conta');
+  const inputUsuario = document.getElementById('input-usuario');
+  const inputCategoriaNome = document.getElementById('input-categoria-nome');
+  const inputCategoriaTipo = document.getElementById('input-categoria-tipo');
+  function fmtCurrency(v){
+    return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  }
+
+  async function loadCategories(){
+    try{
+      const res = await fetch('/categories');
+      const data = await res.json();
+      if(!data.sucesso || !data.categories) return;
+      inputCategoria.innerHTML = '<option value="">Selecione uma categoria</option>';
+      data.categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id_categoria || cat.id;
+        option.textContent = cat.nome_categoria || cat.nome;
+        inputCategoria.appendChild(option);
+      });
+    }catch(err){
+      console.error('Erro ao carregar categorias:', err);
+    }
+  }
+
+  async function saveCategory(){
+    const nome = inputCategoriaNome.value.trim();
+    const tipo=inputCategoriaTipo.value;
+    if(!nome){
+      alert('Digite o nome da categoria');
+      return;
+    }
+    try{
+      const res = await fetch('/categories',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({nome, tipo})
+      });
+      const data = await res.json();
+      if(data.sucesso){
+        alert('Categoria criada com sucesso!');
+        inputCategoriaNome.value = '';
+        inputCategoriaTipo.value = '';
+        modalCategory.classList.remove('active');
+        loadCategories();
+      } else alert(data.erro || 'Erro ao criar categoria');
+    }catch(err){
+      console.error(err);
+      alert('Erro ao criar categoria');
+    }
+  }
+
+  function toggleCategoryModal(){
+    modalCategory.classList.toggle('active');
+  }
 
   function fmtCurrency(v){
     return (Number(v)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+  }
+
+  function getTransactionFormData(){
+    return {
+      descricao: inputDescricao.value.trim(),
+      valor: inputValor.value.trim(),
+      categoria: inputCategoria.value.trim(),
+      conta: inputConta.value.trim(),
+      usuario: inputUsuario.value.trim(),
+    };
+  }
+
+  function clearTransactionForm(){
+    inputDescricao.value = '';
+    inputValor.value = '';
+    inputCategoria.value = '';
+    inputConta.value = '';
+    inputUsuario.value = '';
   }
 
   function fmtDate(d){
@@ -588,22 +784,24 @@
   }
 
   async function createTransaction(){
-    const descricao = prompt('Descrição');
-    if (descricao === null) return;
-    const valor = prompt('Valor (use - para despesas)');
-    if (valor === null) return;
-    const categoria = prompt('ID da categoria (número)');
-    const conta = prompt('ID da conta (número)');
-    const usuario = prompt('ID do usuário (número)');
+    const { descricao, valor, categoria, conta, usuario } = getTransactionFormData();
+    if (!descricao || !valor || !categoria || !conta || !usuario) {
+      alert('Preencha todos os campos antes de criar a transação.');
+      return;
+    }
 
     try{
-      const res = await fetch('/transactions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({descricao,valor, categoria, conta, usuario})});
+      const res = await fetch('/transactions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({descricao,valor,categoria,conta,usuario})});
       const data = await res.json();
       if(data.sucesso){
         alert('Transação criada');
         loadTransactions();
+        clearTransactionForm();
       } else alert(data.erro || 'Erro');
-    }catch(err){console.error(err);alert('Erro ao criar');}
+    }catch(err){
+      console.error(err);
+      alert('Erro ao criar');
+    }
   }
 
   async function deleteTransaction(id){
@@ -639,9 +837,15 @@
   });
 
   btnNew.addEventListener('click', createTransaction);
+  btnAddTransaction.addEventListener('click', createTransaction);
+  btnClearTransaction.addEventListener('click', clearTransactionForm);
+  btnNewCategory.addEventListener('click', toggleCategoryModal);
+  btnSaveCategory.addEventListener('click', saveCategory);
+  btnCloseCategory.addEventListener('click', toggleCategoryModal);
   btnRefresh.addEventListener('click', loadTransactions);
 
   // initial load
+  loadCategories();
   loadTransactions();
 </script>
 </body>

@@ -3,6 +3,7 @@ import LoginRouter from './routers/loginRouter.js';
 import express from 'express';
 import CadastroRouter from './routers/CadastroRouter.js';
 import TransactionsRouter from './routers/TransactionsRouter.js';
+import CategoriesRouter from './routers/CategoriesRouter.js';
 import jwt from 'jsonwebtoken';
 import path from 'path';
 
@@ -53,6 +54,7 @@ app.use('/cadastro', CadastroRouter);
 app.use(express.static('public'));
 app.use('/transactions', TransactionsRouter);
 app.use('/transactions',TransactionsRouter);
+app.use('/categories', CategoriesRouter);
 const PORT = 3000;
 try {
   app.listen(PORT, () => {

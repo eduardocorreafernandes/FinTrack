@@ -21,7 +21,7 @@ class CadastroService {
     }
 
     const user = response.rows[0];
-    const token = jwt.sign({ id: user.id_user }, SECRET, { expiresIn: '1h' });
+    const token = jwt.sign({ id: user.id}, SECRET, { expiresIn: '1h' });
 
     return {
       sucesso: true,

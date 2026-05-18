@@ -20,7 +20,7 @@ class LoginService {
     }
 
     const user = response.rows[0];
-    const senhaCorreta = await bcrypt.compare(senha, user.senha_hash);
+    const senhaCorreta = await bcrypt.compare(senha, user.hash_senha);
 
     if (!senhaCorreta) {
       return {

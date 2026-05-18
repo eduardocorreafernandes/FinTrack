@@ -1,7 +1,7 @@
 import {pool} from '../database/connection.js'
 class UserRepository{
     async UserExists(email) {
-const [rows]=await pool.query('SELECT email FROM usuarios WHERE email=$1',[email]);
+const [rows]=await pool.query('SELECT email FROM users WHERE email=$1',[email]);
 if(rows.length>0){
 return true;
 } else {
@@ -9,7 +9,7 @@ return false;
 }
 }
 async FindByEmail(email,res) {
- const response=await pool.query('SELECT email FROM usuarios WHERE email=$1',[email]);
+ const response=await pool.query('SELECT email FROM users WHERE email=$1',[email]);
  res.status(200).json({client:response});
 
 }
